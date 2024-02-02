@@ -13,36 +13,32 @@
 #ifndef PIPEX_H
 
 # define PIPEX_H
+# include "libft/libft.h"
+# include <errno.h>
 # include <fcntl.h>
 # include <stdio.h>
 # include <stdlib.h>
-# include <unistd.h>
 # include <string.h>
 # include <sys/types.h>
 # include <sys/wait.h>
-# include <errno.h>
+# include <unistd.h>
 
-typedef struct  s_arg
+typedef struct s_arg
 {
-    char        **paths;
-    char        *file1;
-    char        *file2;
-    char        *cmd1;
-    char        *cmd2;
-    char        *cmd1_path;
-    char        *cmd2_path;
-    char        **cmd1_arr;
-    char        **cmd2_arr;
-    int         fd_src;
-    int         fd_dst;
-}               t_arg;
+	char	**paths;
+	char	*cmd1_path;
+	char	*cmd2_path;
+	char	**cmd1_arr;
+	char	**cmd2_arr;
+}			t_arg;
 
-char	**ft_split(char const *s, char c);
-char	**copywords(int wordcount, char **dest, char const *s, char c);
-int	countwords(char const *s, char c);
-char	*ft_substr(char const *s, unsigned int start, size_t len);
-char	*ft_strjoin(char const *s1, char const *s2);
-size_t	ft_strlcpy(char *dst, const char *src, size_t size);
-size_t	ft_strlen(const char *s);
+int			parser(int ac, char **av, char **envp, t_arg *ar);
+char		*cmd_fullpath(t_arg *ar, char *cmd);
+void		child_two(t_arg ar, char **av, int fd[2]);
+void		child_one(t_arg ar, char **av, int fd[2]);
+void		ar_init(t_arg *ar);
+void		ar_free(t_arg *ar);
+void		delete_free(char **ptr);
+void		free_exit(t_arg *ar);
 
 #endif
