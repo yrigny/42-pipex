@@ -33,9 +33,9 @@ typedef struct s_arg
 }			t_arg;
 
 int			parser(int ac, char **av, char **envp, t_arg *ar);
-char		*cmd_fullpath(t_arg *ar, char *cmd);
-void		child_two(t_arg ar, char **av, int fd[2]);
-void		child_one(t_arg ar, char **av, int fd[2]);
+void        find_fullpath(t_arg *ar, char *cmd, char **fullpath);
+void		child_two(t_arg ar, char **av, char **envp, int fd[2]);
+void		child_one(t_arg ar, char **av, char **envp, int fd[2]);
 void		ar_init(t_arg *ar);
 void		ar_free(t_arg *ar);
 void		delete_free(char **ptr);

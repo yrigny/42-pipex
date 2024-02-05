@@ -12,7 +12,7 @@
 
 #include "pipex.h"
 
-void	child_one(t_arg ar, char **av, int fd[2])
+void	child_one(t_arg ar, char **av, char **envp, int fd[2])
 {
 	int	exec_status;
 	int	fd_src;
@@ -28,12 +28,12 @@ void	child_one(t_arg ar, char **av, int fd[2])
 	dup2(fd[1], STDOUT_FILENO);
 	close(fd[1]);
 	close(fd[0]);
-	exec_status = execve(ar.cmd1_path, ar.cmd1_arr, NULL);
+	exec_status = execve(ar.cmd1_path, ar.cmd1_arr, envp);
 	if (exec_status == -1)
 		perror("");
 }
 
-void	child_two(t_arg ar, char **av, int fd[2])
+void	child_two(t_arg ar, char **av, char **envp, int fd[2])
 {
 	int	exec_status;
 	int	fd_dst;
@@ -49,38 +49,37 @@ void	child_two(t_arg ar, char **av, int fd[2])
 	close(fd[1]);
 	dup2(fd_dst, STDOUT_FILENO);
 	close(fd_dst);
-	exec_status = execve(ar.cmd2_path, ar.cmd2_arr, NULL);
+	exec_status = execve(ar.cmd2_path, ar.cmd2_arr, envp);
 	if (exec_status == -1)
 		perror("");
 }
 
-char	*cmd_fullpath(t_arg *ar, char *cmd)
+void	find_fullpath(t_arg *ar, char *cmd, char **fullpath)
 {
 	char	*cmd_path_tmp;
-	char	*fullpath;
 	int		i;
 
+	// cmd_path_tmp = NULL;
 	i = -1;
-	fullpath = NULL;
-	if (cmd == NULL)
-		return (fullpath);
-	while (!fullpath && ar->paths[++i])
+	while (!(*fullpath) && cmd && ar->paths[++i])
 	{
 		cmd_path_tmp = ft_strjoin(ar->paths[i], "/");
-		fullpath = ft_strjoin(cmd_path_tmp, cmd);
-		if (access(fullpath, F_OK) != 0)
-			delete_free(&fullpath);
+		*fullpath = ft_strjoin(cmd_path_tmp, cmd);
+		if (access(*fullpath, F_OK) != 0)
+			delete_free(fullpath);
 		free(cmd_path_tmp);
 	}
-	if (fullpath == NULL)
-		ft_putstr_fd("Command not found: ", 2);
-	else if (access(fullpath, X_OK) != 0)
-		ft_putstr_fd("Permission denied: ", 2);
-	if (access(fullpath, X_OK) != 0)
-		delete_free(&fullpath);
-	if (fullpath == NULL || access(fullpath, X_OK) != 0)
-		ft_printf("%s\n", cmd);
-	return (fullpath);
+	if (*fullpath == NULL)
+	{
+		// ft_printf("fullpath: %s\n", fullpath);
+		ft_putstr_fd(cmd, 2);
+		ft_putstr_fd(": command not found\n", 2);
+	}
+	else if (access(*fullpath, X_OK) != 0)
+	{
+		perror("");
+		delete_free(fullpath);
+	}
 }
 
 int	parser(int ac, char **av, char **envp, t_arg *ar)
@@ -100,12 +99,12 @@ int	parser(int ac, char **av, char **envp, t_arg *ar)
 	}
 	ar->cmd1_arr = ft_split(av[2], ' ');
 	ar->cmd2_arr = ft_split(av[3], ' ');
-	if (*(ar->cmd1_arr) == NULL)
-		ft_putstr_fd("permission denied: \n", 2);
-	if (*(ar->cmd2_arr) == NULL)
-		ft_putstr_fd("permission denied: \n", 2);
-	ar->cmd1_path = cmd_fullpath(ar, *(ar->cmd1_arr));
-	ar->cmd2_path = cmd_fullpath(ar, *(ar->cmd2_arr));
+	// if (*(ar->cmd1_arr) == NULL)
+	// 	ft_putstr_fd("permission denied: \n", 2);
+	// if (*(ar->cmd2_arr) == NULL)
+	// 	ft_putstr_fd("permission denied: \n", 2);
+	find_fullpath(ar, *(ar->cmd1_arr), &ar->cmd1_path);
+	find_fullpath(ar, *(ar->cmd2_arr), &ar->cmd2_path);
 	if (!ar->cmd1_path || !ar->cmd2_path)
 		return (0);
 	return (1);
@@ -126,12 +125,12 @@ int	main(int ac, char **av, char **envp)
 	if (pid1 < 0)
 		free_exit(&ar);
 	if (pid1 == 0)
-		child_one(ar, av, fd);
+		child_one(ar, av, envp, fd);
 	pid2 = fork();
 	if (pid2 < 0)
 		free_exit(&ar);
 	if (pid2 == 0)
-		child_two(ar, av, fd);
+		child_two(ar, av, envp, fd);
 	close(fd[0]);
 	close(fd[1]);
 	waitpid(pid1, NULL, 0);
