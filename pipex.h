@@ -29,7 +29,7 @@ typedef struct s_proc
 	char	*path;
 }			t_proc;
 
-void		parser(char *arg, char **envp, t_proc *child);
+void		find_path(char **envp, t_proc *child);
 void		pipex(t_proc (*child)[2], char **av, char **envp);
 void		child_one(char *filename, char **envp, t_proc child, int fd[2]);
 void		child_two(char *filename, char **envp, t_proc child, int fd[2]);
