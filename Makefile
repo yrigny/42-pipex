@@ -4,7 +4,7 @@ CFLAGS		= -Wall -Wextra -Werror
 
 FT_DIR		= ./libft
 
-CFILES		= main.c utils.c
+CFILES		= main.c pipex.c
 
 CFILES_B	= 
 
