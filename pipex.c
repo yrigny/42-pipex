@@ -33,6 +33,12 @@ void	child_one(char *filename, char **envp, t_proc child, int fd[2])
 {
 	int	fd_src;
 
+	fd_src = open(filename, O_RDONLY, 0644);
+	if (fd_src == -1)
+	{
+		perror(filename);
+		return ;
+	}
 	if (!child.path)
 	{
 		ft_putstr_fd(child.cmd_arr[0], 2);
@@ -41,13 +47,7 @@ void	child_one(char *filename, char **envp, t_proc child, int fd[2])
 	}
 	if (access(child.path, X_OK) != 0)
 	{
-		perror("pipex cmd1");
-		return ;
-	}
-	fd_src = open(filename, O_RDONLY, 0644);
-	if (fd_src == -1)
-	{
-		perror("pipex");
+		perror("cmd1");
 		return ;
 	}
 	dup2(fd_src, STDIN_FILENO);
@@ -62,6 +62,7 @@ void	child_two(char *filename, char **envp, t_proc child, int fd[2])
 {
 	int	fd_dst;
 
+	fd_dst = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (!child.path)
 	{
 		ft_putstr_fd(child.cmd_arr[0], 2);
@@ -70,10 +71,9 @@ void	child_two(char *filename, char **envp, t_proc child, int fd[2])
 	}
 	if (access(child.path, X_OK) != 0)
 	{
-		perror("pipex cmd2");
+		perror("cmd2");
 		return ;
 	}
-	fd_dst = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	dup2(fd[0], STDIN_FILENO);
 	dup2(fd_dst, STDOUT_FILENO);
 	close(fd[1]);
