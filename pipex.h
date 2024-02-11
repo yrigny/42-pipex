@@ -30,9 +30,9 @@ typedef struct s_proc
 }			t_proc;
 
 void		find_path(char **envp, t_proc *child);
-void		pipex(t_proc (*child)[2], char **av, char **envp);
+void		pipex(t_proc (*child)[2], char **av, char **envp, int *status);
 void		child_one(char *filename, char **envp, t_proc child, int fd[2]);
-void		child_two(char *filename, char **envp, t_proc child, int fd[2]);
+int		child_two(char *filename, char **envp, t_proc child, int fd[2]);
 void		free_exit(t_proc (*child)[2], int status);
 
 #endif

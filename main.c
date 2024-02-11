@@ -15,6 +15,7 @@
 int	main(int ac, char **av, char **envp)
 {
 	t_proc	child[2];
+	int		status = 0;
 
 	if (ac != 5)
 	{
@@ -32,7 +33,7 @@ int	main(int ac, char **av, char **envp)
 		child[1].path = ft_strdup(child[1].cmd_arr[0]);
 	else
 		find_path(envp, &child[1]);
-	pipex(&child, av, envp);
-	free_exit(&child, EXIT_SUCCESS);
-	return (EXIT_SUCCESS);
+	pipex(&child, av, envp, &status);
+	free_exit(&child, status);
+	// return (EXIT_SUCCESS);
 }

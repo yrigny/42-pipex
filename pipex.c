@@ -58,7 +58,7 @@ void	child_one(char *filename, char **envp, t_proc child, int fd[2])
 	exit(EXIT_FAILURE);
 }
 
-void	child_two(char *filename, char **envp, t_proc child, int fd[2])
+int	child_two(char *filename, char **envp, t_proc child, int fd[2])
 {
 	int	fd_dst;
 
@@ -67,12 +67,12 @@ void	child_two(char *filename, char **envp, t_proc child, int fd[2])
 	{
 		ft_putstr_fd(child.cmd_arr[0], 2);
 		ft_putstr_fd(": command not found\n", 2);
-		return ;
+		return (127);
 	}
 	if (access(child.path, X_OK) != 0)
 	{
 		perror("cmd2");
-		return ;
+		return (1);
 	}
 	dup2(fd[0], STDIN_FILENO);
 	dup2(fd_dst, STDOUT_FILENO);
@@ -82,7 +82,7 @@ void	child_two(char *filename, char **envp, t_proc child, int fd[2])
 	exit(EXIT_FAILURE);
 }
 
-void	pipex(t_proc (*child)[2], char **av, char **envp)
+void	pipex(t_proc (*child)[2], char **av, char **envp, int *status)
 {
 	int	fd[2];
 	int	pid[2];
@@ -102,13 +102,17 @@ void	pipex(t_proc (*child)[2], char **av, char **envp)
 		free_exit(child, EXIT_FAILURE);
 	if (pid[1] == 0)
 	{
-		child_two(av[4], envp, (*child)[1], fd);
-		free_exit(child, EXIT_FAILURE);
+		int exitcode = child_two(av[4], envp, (*child)[1], fd);
+		free_exit(child, exitcode);
 	}
 	close(fd[0]);
 	close(fd[1]);
 	waitpid(pid[0], NULL, 0);
-	waitpid(pid[1], NULL, 0);
+	waitpid(pid[1], status, 0);
+	if ( WIFEXITED(*status) ) {
+        int es = WEXITSTATUS(*status);
+        printf("Exit status was %d\n", es);
+    }
 }
 
 void	find_path(char **envp, t_proc *child)
