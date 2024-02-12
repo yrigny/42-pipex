@@ -6,7 +6,7 @@ FT_DIR		= ./libft
 
 CFILES		= main.c pipex.c
 
-CFILES_B	= 
+CFILES_B	= main_bonus.c pipex_bonus.c
 
 OFILES		= $(CFILES:.c=.o)
 
@@ -26,7 +26,7 @@ $(NAME): $(OFILES)
 	make -C $(FT_DIR)
 	$(CC) $(OFILES) -o $(NAME) $(LFLAGS)
 
-$(NAME_B): $(OBJ_B)
+$(NAME_B): $(OFILES_B)
 	make -C $(FT_DIR)
 	$(CC) $(OFILES_B) -o $(NAME_B) $(LFLAGS)
 
