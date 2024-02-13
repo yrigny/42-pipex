@@ -47,7 +47,7 @@ void	child_one(char *filename, char **envp, t_proc child, int fd[2])
 	}
 	if (access(child.path, X_OK) != 0)
 	{
-		perror("cmd1");
+		perror(child.cmd_arr[0]);
 		return ;
 	}
 	dup2(fd_src, STDIN_FILENO);
@@ -71,7 +71,7 @@ void	child_two(char *filename, char **envp, t_proc child, int fd[2])
 	}
 	if (access(child.path, X_OK) != 0)
 	{
-		perror("cmd2");
+		perror(child.cmd_arr[0]);
 		return ;
 	}
 	dup2(fd[0], STDIN_FILENO);
