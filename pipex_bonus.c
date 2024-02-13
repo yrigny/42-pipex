@@ -12,29 +12,7 @@
 
 #include "pipex_bonus.h"
 
-void	free_exit(t_list **cmds, int status)
-{
-	t_list	*tmp;
-	t_proc	*child;
-
-	if (!cmds)
-		return ;
-	while (*cmds)
-	{
-		tmp = (*cmds)->next;
-		child = (*cmds)->content;
-		while (child->cmd_arr++)
-			free(child->cmd_arr);
-		free(child->cmd_arr);
-		free(child->path);
-		free(child);
-		free(*cmds);
-		*cmds = tmp;
-	}
-	exit(status);
-}
-
-void	child_first(char *filename, char **envp, t_proc *child, int pipe[2])
+void	child_first(char *filename, t_proc *child, int pipe[2])
 {
 	int	fd_src;
 
@@ -52,18 +30,17 @@ void	child_first(char *filename, char **envp, t_proc *child, int pipe[2])
 	}
 	if (access(child->path, X_OK) != 0)
 	{
-		ft_putstr_fd(child->cmd_arr[0], 2);
-		perror("");
+		perror(child->cmd_arr[0]);
 		return ;
 	}
 	dup2(fd_src, STDIN_FILENO);
 	dup2(pipe[1], STDOUT_FILENO);
 	close(pipe[0]);
-	execve(child->path, child->cmd_arr, envp);
+	execve(child->path, child->cmd_arr, NULL);
 	perror("pipex");
 }
 
-void	child_middle(char **envp, t_proc * child, int pipe1[2], int pipe2[2])
+void	child_middle(t_proc *child, int pipe1[2], int pipe2[2])
 {
 	if (!child->path)
 	{
@@ -73,19 +50,18 @@ void	child_middle(char **envp, t_proc * child, int pipe1[2], int pipe2[2])
 	}
 	if (access(child->path, X_OK) != 0)
 	{
-		ft_putstr_fd(child->cmd_arr[0], 2);
-		perror("");
+		perror(child->cmd_arr[0]);
 		return ;
 	}
 	dup2(pipe1[0], STDIN_FILENO);
 	dup2(pipe2[1], STDOUT_FILENO);
 	close(pipe1[1]);
 	close(pipe2[0]);
-	execve(child->path, child->cmd_arr, envp);
+	execve(child->path, child->cmd_arr, NULL);
 	perror("pipex");
 }
 
-void	child_last(char *filename, char **envp, t_proc *child, int pipe[2])
+void	child_last(char *filename, t_proc *child, int pipe[2])
 {
 	int	fd_dst;
 
@@ -98,59 +74,62 @@ void	child_last(char *filename, char **envp, t_proc *child, int pipe[2])
 	}
 	if (access(child->path, X_OK) != 0)
 	{
-		ft_putstr_fd(child->cmd_arr[0], 2);
-		perror("");
+		perror(child->cmd_arr[0]);
 		return ;
 	}
 	dup2(pipe[0], STDIN_FILENO);
 	dup2(fd_dst, STDOUT_FILENO);
 	close(pipe[1]);
-	execve(child->path, child->cmd_arr, envp);
+	execve(child->path, child->cmd_arr, NULL);
 	perror("pipex");
-	// exit(EXIT_FAILURE);
 }
 
-void	pipex(t_list **cmds, int ac, char **av, char **envp)
+void	fork_children(int ac, char **av, t_pipe book[MAX_PIPE], t_list *cmds)
 {
-	int	fd[ac - 4][2];
-	int	pid[ac - 3];
-	int	i = -1;
-	int	j = -1;
+	int		j;
+	t_list	*head;
 
+	j = -1;
+	head = cmds;
+	while (++j < ac - 3)
+	{
+		if (j > 1)
+		{
+			close(book[j - 2].fd[0]);
+			close(book[j - 2].fd[1]);
+		}
+		book[j].pid = fork();
+		if (book[j].pid == -1)
+			free_exit(&cmds, EXIT_FAILURE);
+		if (book[j].pid == 0 && j == 0)
+			child_first(av[1], cmds->content, book[0].fd);
+		else if (book[j].pid == 0 && j < ac - 4)
+			child_middle(cmds->content, book[j - 1].fd, book[j].fd);
+		else if (book[j].pid == 0 && j == ac - 4)
+			child_last(av[ac - 1], cmds->content, book[j - 1].fd);
+		if (book[j].pid == 0)
+			free_exit(&head, EXIT_FAILURE);
+		cmds = cmds->next;
+	}
+}
+
+void	pipex(t_list *cmds, int ac, char **av)
+{
+	t_pipe	book[MAX_PIPE];
+	int		i;
+	t_list	*head;
+
+	i = -1;
+	head = cmds;
 	while (++i < ac - 4)
 	{
-		printf("pipe fd[%d]\n", i);
-		if (pipe(fd[i]) == -1)
-			free_exit(cmds, EXIT_FAILURE);
-		printf("fd[%d][0] = %d\n", i, fd[i][0]);
-		printf("fd[%d][1] = %d\n", i, fd[i][1]);
+		if (pipe(book[i].fd) == -1)
+			free_exit(&cmds, EXIT_FAILURE);
 	}
-	printf("i = %d\n", i);
-	while (++j < ac - 3)
-	{
-		pid[j] = fork();
-		if (pid[j] == -1)
-			free_exit(cmds, EXIT_FAILURE);
-		if (pid[j] == 0 && j == 0)
-			child_first(av[1], envp, (*cmds)->content, fd[0]);
-		if (pid[j] == 0 && j < ac - 4)
-			child_middle(envp, (*cmds)->content, fd[j - 1], fd[j]);
-		if (pid[j] == 0 && j == ac - 4)
-			child_last(av[ac - 1], envp, (*cmds)->content, fd[ac - 4]);
-		if (pid[j] == 0)
-			free_exit(cmds, EXIT_FAILURE);
-		*cmds = (*cmds)->next;
-	}
-	while (--i >= 0)
-	{
-		printf("close fd[%d][0]\nclose fd[%d][1]\n", i, i);
-		close(fd[i][0]);
-		close(fd[i][1]);
-	}
-	j = -1;
-	while (++j < ac - 3)
-	{
-		printf("wait pid[%d]\n", j);
-		waitpid(pid[j], NULL, 0);
-	}
+	fork_children(ac, av, book, cmds);
+	close(book[i - 1].fd[0]);
+	close(book[i - 1].fd[1]);
+	i = -1;
+	while (++i < ac - 3)
+		waitpid(book[i].pid, NULL, 0);
 }
